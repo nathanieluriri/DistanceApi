@@ -15,7 +15,7 @@ app.add_middleware(
 )
 
 # Replace with your Google API key
-GOOGLE_API_KEY = os.getenv("AIzaSyB9dN1kO8qCsYvuiix2CtriunGFjhYwT4g")
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 
 # Conversion factor from meters to miles
 METERS_TO_Km = 0.001
