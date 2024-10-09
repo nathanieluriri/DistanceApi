@@ -1,4 +1,5 @@
-from fastapi import FastAPI, HTTPException
+import json
+from fastapi import FastAPI, HTTPException, Query
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 from pydantic import BaseModel
@@ -133,3 +134,36 @@ async def get_distance(origin_place_id: str, destination_place_id: str):
         raise HTTPException(status_code=500, detail="Distance data not available in the response.")
     
     return {"distance_miles": round(distance_miles, 2)}
+
+
+
+
+@app.post("/create-payment-link")
+async def create_payment_link(
+    distance: float = Query(..., description="Distance of the delivery in km"),
+    unitAmount: int = Query(..., description="Price of the delivery in smallest currency unit"),
+    currency: str = Query("gbp", description="Currency for the payment"),
+    origin: str = Query(..., description="Origin or the pickup location"),
+    destination: str = Query(..., description="Destination or the drop off location")
+):
+    url = "https://auto-gen-payment-link-stripe.vercel.app/api/v1/create-payment-link"
+    headers = {"Content-Type": "application/json"}
+    
+    body = {
+        "productName": f"Delivery journey for {distance}km ",
+        "productDescription": f"Delivery for a distance of {distance}km is less than 12km and any distance less than 12km is a standard delivery fee of 15(£) from {origin} to {destination} with a 5(£) pounds pickup fee" if (distance<12) else f"Delivery for a distance of {distance}km which is greater than 12km additional ({distance-12} * 1.75£) + 15£ flat rate + 5£ pickup rate from {origin} to {destination} " ,
+        "unitAmount": f"{unitAmount}",
+        "currency": currency,
+        "quantity": "1"
+    }
+
+    try:
+        response = requests.post(url, headers=headers, json=body)
+
+        if response.status_code == 201:
+            return response.json()['url']  # Return the payment link details
+        else:
+            raise HTTPException(status_code=response.status_code, detail=f"Failed to create payment link {response.text}")
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error occurred: {str(e)}")
