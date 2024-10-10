@@ -83,9 +83,12 @@ class MongoDB:
         
         # Insert the user data into the users collection
         if existing_user:
-            result = self.users_collection.insert_one(user_data.model_dump())
+            result = "Already saved"
+            
         else:
-            return "Already saved" 
+            result = self.users_collection.insert_one(user_data.model_dump())
+            
+        return result
         
 
         # Return the ID of the inserted document
