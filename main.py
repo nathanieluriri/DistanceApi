@@ -72,8 +72,21 @@ class MongoDB:
         Returns:
         - str: The ID of the inserted document.
         """
+        existing_user = self.users_collection.find_one({
+            "name":user_data.name,
+            "phone_number": user_data.phone_number,
+            "email": user_data.email,
+            "pick_up_details":user_data.pick_up_details,
+            "drop_off_details":user_data.drop_off_details,
+            "schedule":user_data.schedule,
+        })
+        
         # Insert the user data into the users collection
-        result = self.users_collection.insert_one(user_data.dict())
+        if existing_user:
+            result = self.users_collection.insert_one(user_data.model_dump())
+        else:
+            return "Already saved" 
+        
 
         # Return the ID of the inserted document
         return str(result.inserted_id)
@@ -91,6 +104,7 @@ async def create_user(user: User):
     Returns:
     - dict: A message indicating successful addition and the ID of the user.
     """
+
     try:
         user_id = mongo_db.add_user(user)
         return {"message": "User added successfully", "user_id": user_id}
@@ -150,8 +164,8 @@ async def create_payment_link(
     headers = {"Content-Type": "application/json"}
     
     body = {
-        "productName": f"Delivery journey for {distance}km ",
-        "productDescription": f"Delivery for a distance of {distance}km is less than 12km and any distance less than 12km is a standard delivery fee of 15(£) from {origin} to {destination} with a 5(£) pounds pickup fee" if (distance<12) else f"Delivery for a distance of {distance}km which is greater than 12km additional ({distance-12} * 1.75£) + 15£ flat rate + 5£ pickup rate from {origin} to {destination} " ,
+        "productName": f"Delivery journey for {distance} km ",
+        "productDescription": f"Delivery for a distance of {distance} km is less than 12km and any distance less than 12km is a standard delivery fee of 15(£) from {origin} to {destination} with a 5(£) pounds pickup fee" if (distance<12) else f"Delivery for a distance of {distance}km which is greater than 12km additional ({distance-12} * 1.75£) + 15£ flat rate + 5£ pickup rate from {origin} to {destination} " ,
         "unitAmount": f"{unitAmount}",
         "currency": currency,
         "quantity": "1"
