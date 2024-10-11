@@ -160,14 +160,19 @@ async def create_payment_link(
     unitAmount: int = Query(..., description="Price of the delivery in smallest currency unit"),
     currency: str = Query("gbp", description="Currency for the payment"),
     origin: str = Query(..., description="Origin or the pickup location"),
-    destination: str = Query(..., description="Destination or the drop off location")
+    destination: str = Query(..., description="Destination or the drop off location"),
+    pickupDate: str = Query(...,description="Pickup Date"),
+    pickupTime:str = Query(...,description="Pickup Time"),
+    dropoffDate: str = Query(...,description="Drop off Date"),
+    dropoffTime: str = Query(...,description="Drop off Time"),
+
 ):
     url = "https://auto-gen-payment-link-stripe.vercel.app/api/v1/create-payment-link"
     headers = {"Content-Type": "application/json"}
     
     body = {
         "productName": f"Delivery journey for {distance} km ",
-        "productDescription": f"Delivery for a distance of {distance} km is less than 12km and any distance less than 12km is a standard delivery fee of 15(£) from {origin} to {destination} with a 5(£) pounds pickup fee" if (distance<12) else f"Delivery for a distance of {distance}km which is greater than 12km additional ({distance-12} * 1.75£) + 15£ flat rate + 5£ pickup rate from {origin} to {destination} " ,
+        "productDescription": f"Delivery for a distance of {distance} km is less than 12km and any distance less than 12km is a standard delivery fee of 15(£) from {origin} to {destination} to be picked up at {pickupTime} {pickupDate} and dropped of at {dropoffDate} {dropoffTime} with a 5(£) pounds pickup fee" if (distance<12) else f"Delivery for a distance of {distance}km which is greater than 12km additional ({distance-12} * 1.75£) + 15£ flat rate + 5£ pickup rate from {origin} to {destination} Pickup Schedule Details: {pickupTime} {pickupDate} and Drop off Schedule Details:  {dropoffDate} {dropoffTime} " ,
         "unitAmount": f"{unitAmount}",
         "currency": currency,
         "quantity": "1"
