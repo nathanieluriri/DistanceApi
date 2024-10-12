@@ -1,50 +1,47 @@
-from pymongo.mongo_client import MongoClient
-from pymongo.server_api import ServerApi
-import os
+import pprint
+from pymongo import MongoClient
 from dotenv import load_dotenv
+import os
 
-class MongoDB:
-    def __init__(self):
-        # Load environment variables from .env file
-        load_dotenv()
-        uri = os.getenv("MONGO_URI")
+# Load environment variables
+load_dotenv()
 
-        # Create a new client and connect to the server
-        self.client = MongoClient(uri, server_api=ServerApi('1'))
+# Initialize MongoDB client
+client = MongoClient(os.getenv("MONGO_URI"))
 
-        # Specify the database and collection
-        self.db = self.client['your_database_name']  # Replace with your database name
-        self.users_collection = self.db['users']  # This is the collection where users will be stored
+def get_documents(database_name: str, collection_name: str, query: dict = None):
+    """
+    Fetch documents from the specified MongoDB collection.
 
-    def add_user(self, name: str, phone_number: str, email: str, pick_up_details: dict, drop_off_details: dict, schedule: dict):
-        # Create a dictionary for the user data
-        user_data = {
-            'name': name,
-            'phoneNumber': phone_number,
-            'email': email,
-            'pickUpDetails': pick_up_details,
-            'dropOffDetails': drop_off_details,
-            'schedule': schedule
-        }
+    :param database_name: The name of the database.
+    :param collection_name: The name of the collection.
+    :param query: The query to filter documents (default is None for all documents).
+    :return: List of documents matching the query.
+    """
+    # Select the database
+    db = client[database_name]
+    
+    # Select the collection
+    collection = db[collection_name]
+    
+    # Fetch documents based on the query
+    if query is None:
+        documents = list(collection.find())  # Get all documents if no query is provided
+    else:
+        documents = list(collection.find(query))  # Get documents that match the query
+    
+    return documents
 
-        # Insert the user data into the users collection
-        result = self.users_collection.insert_one(user_data)
-
-        # Return the ID of the inserted document
-        return result.inserted_id
-
-# Example usage
+# Example usage:
 if __name__ == "__main__":
-    mongo_db = MongoDB()
+    database_name = 'Deliveries'
+    collection_name = 'deliveries'
+    
+    # Get all documents from the 'users' collection
+    all_documents = get_documents(database_name, collection_name)
+    
+    
+    # Get documents with a specific query
+    specific_query = {'status': 'pick Up'}  # Example query to get active users
+    pick_up_orders = get_documents(database_name, collection_name, specific_query)
 
-    # Add a user
-    user_id = mongo_db.add_user(
-        name="John Doe",
-        phone_number="123-456-7890",
-        email="john.doe@example.com",
-        pick_up_details={"location": "123 Main St", "time": "10:00 AM"},
-        drop_off_details={"location": "456 Elm St", "time": "11:00 AM"},
-        schedule={"date": "2024-10-05", "recurring": False}
-    )
-
-    print(f"User added with ID: {user_id}")
