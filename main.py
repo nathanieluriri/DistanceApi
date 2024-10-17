@@ -298,7 +298,7 @@ def update_payment_status(
 
         # Update the document with the specified payment ID
         result = collection.update_one(
-            {"payment_id": payment_id},  # Match the document by payment ID
+            {"_id": payment_id},  # Match the document by payment ID
             {"$set": {"status": new_status}}  # Set the new status
         )
         
