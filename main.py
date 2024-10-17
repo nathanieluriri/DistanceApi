@@ -230,7 +230,7 @@ async def create_payment_link(
 
 
 @app.post("/cancel-email")
-async def create_payment_link(
+async def send_a_cancel_email_to_user(
     customers_email: str = Query(..., description="Enter Customers Email"),):
     try:
         send_payment_canceled_email(customer_email=customers_email)
@@ -241,7 +241,7 @@ async def create_payment_link(
 
 
 @app.post("/pickup-delay-email")
-async def create_payment_link(
+async def send_a_pickup_delay_email_to_user(
     customers_email: str = Query(..., description="Enter Customers Email"),):
     try:
         send_payment_delay_email_pickUp(customer_email=customers_email)
@@ -252,7 +252,7 @@ async def create_payment_link(
 
 
 @app.post("/delivery-delay-email")
-async def create_payment_link(
+async def send_a_delivery_delay_email_to_user(
     customers_email: str = Query(..., description="Enter Customers Email"),):
     try:
         send_payment_delay_email_deliver(customer_email=customers_email)
@@ -263,7 +263,7 @@ async def create_payment_link(
 
 
 @app.post("/pickup-notification-email")
-async def create_payment_link(
+async def send_an_email_to_user_telling_user_that_the_item_has_been_picked_up(
     customers_email: str = Query(..., description="Enter Customers Email"),):
     try:
         send_email_to_notify_customer_that_the_item_has_been_picked_up(customer_email=customers_email)
@@ -274,7 +274,7 @@ async def create_payment_link(
 
 
 @app.post("/delivery-notification-email")
-async def create_payment_link(
+async def send_an_email_to_user_telling_user_that_the_item_has_been_delivered(
     customers_email: str = Query(..., description="Enter Customers Email"),):
     try:
         send_email_to_notify_customer_that_the_item_has_been_delivered(customer_email=customers_email)
