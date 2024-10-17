@@ -305,6 +305,6 @@ def update_payment_status(
         if result.matched_count == 0:
             raise HTTPException(status_code=404, detail="Payment ID not found.")
         
-        return JSONResponse(status_code=204)  # No content returned for a successful update
+        return JSONResponse(status_code=204, content="Success")  # No content returned for a successful update
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
