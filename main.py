@@ -1,6 +1,7 @@
 import json
 from typing import List, Optional
 from fastapi import FastAPI, HTTPException, Query
+from fastapi.responses import JSONResponse
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 from pydantic import BaseModel
@@ -8,6 +9,8 @@ from fastapi.middleware.cors import CORSMiddleware
 import requests
 import os
 from dotenv import load_dotenv
+
+from emails import send_email_to_notify_customer_that_the_item_has_been_delivered, send_email_to_notify_customer_that_the_item_has_been_picked_up, send_payment_canceled_email, send_payment_delay_email_deliver, send_payment_delay_email_pickUp
 
 load_dotenv()
 
@@ -221,3 +224,87 @@ async def create_payment_link(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error occurred: {str(e)}")
+    
+
+
+
+
+@app.post("/cancel-email")
+async def create_payment_link(
+    customers_email: str = Query(..., description="Enter Customers Email"),):
+    try:
+        send_payment_canceled_email(customer_email=customers_email)
+        return JSONResponse(status_code=200, content={"message": "Email sent successfully"})
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to send email: {str(e)}")
+    
+
+
+@app.post("/pickup-delay-email")
+async def create_payment_link(
+    customers_email: str = Query(..., description="Enter Customers Email"),):
+    try:
+        send_payment_delay_email_pickUp(customer_email=customers_email)
+        return JSONResponse(status_code=200, content={"message": "Email sent successfully"})
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to send email: {str(e)}")
+    
+
+
+@app.post("/delivery-delay-email")
+async def create_payment_link(
+    customers_email: str = Query(..., description="Enter Customers Email"),):
+    try:
+        send_payment_delay_email_deliver(customer_email=customers_email)
+        return JSONResponse(status_code=200, content={"message": "Email sent successfully"})
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to send email: {str(e)}")
+    
+
+
+@app.post("/pickup-notification-email")
+async def create_payment_link(
+    customers_email: str = Query(..., description="Enter Customers Email"),):
+    try:
+        send_email_to_notify_customer_that_the_item_has_been_picked_up(customer_email=customers_email)
+        return JSONResponse(status_code=200, content={"message": "Email sent successfully"})
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to send email: {str(e)}")
+    
+
+
+@app.post("/delivery-notification-email")
+async def create_payment_link(
+    customers_email: str = Query(..., description="Enter Customers Email"),):
+    try:
+        send_email_to_notify_customer_that_the_item_has_been_delivered(customer_email=customers_email)
+        return JSONResponse(status_code=200, content={"message": "Email sent successfully"})
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to send email: {str(e)}")
+    
+
+
+
+@app.patch("/update-status")
+def update_payment_status(
+    payment_id: str = Query(..., description="Enter Your payment ID"),
+    new_status: str = Query(..., description="Enter a status")
+):
+    try:
+        # Connect to MongoDB
+        client = MongoClient(os.getenv("MONGO_URI"))
+        db = client["Deliveries"]
+        collection = db["deliveries"]
+
+        # Update the document with the specified payment ID
+        result = collection.update_one(
+            {"payment_id": payment_id},  # Match the document by payment ID
+            {"$set": {"status": new_status}}  # Set the new status
+        )
+        
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Payment ID not found.")
+        
+        return JSONResponse(status_code=204)  # No content returned for a successful update
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
