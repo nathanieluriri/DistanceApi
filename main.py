@@ -2,6 +2,7 @@ import json
 from typing import List, Optional
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import JSONResponse
+import httpx
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 from pydantic import BaseModel
@@ -91,9 +92,9 @@ class MongoDB:
             
         else:
             result = self.users_collection.insert_one(user_data.model_dump())
-            returnable ="new details saved"
+            returnable =f"new details saved {result}"
             
-        return 
+        return returnable
         
 
 
@@ -308,3 +309,48 @@ def update_payment_status(
         return JSONResponse(status_code=204, content="Success")  # No content returned for a successful update
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+
+class RefundRequest(BaseModel):
+    paymentIntentId: str
+    amount: int 
+
+@app.post("/refund")  # Updated the endpoint to just /refund
+async def refund(refund_request: RefundRequest ):
+    url = "https://auto-gen-payment-link-stripe.vercel.app/api/v1/refund"
+    headers = {"Content-Type": "application/json"}
+    refundableamount = RefundRequest.amount -500
+    RefundRequest.amount = refundableamount
+    # Prepare the request payload
+    payload = refund_request.model_dump_json()
+    uri = os.getenv("MONGO_URI")
+
+    client = MongoClient(uri, server_api=ServerApi('1'))
+
+    db = client['Deliveries']  
+    refunds_collection = db['refunds'] 
+   
+    
+    async with httpx.AsyncClient() as client:
+        response = await client.post(url, headers=headers, content=payload)
+        
+        if response.status_code == 200:
+            refunds_collection.insert_one(response.json())
+           
+            print(response.json())
+            refund= response.json()
+
+            document = {
+                "_id: ":refund["refund"]['id'],
+                "amountRefunded: ":refund["refund"]['amount'],
+                "paymentId :":refund["refund"]['payment_intent'],
+                'receiptNumber:':refund["refund"]['receipt_number'],
+                'transferReversal: ':refund["refund"]['transfer_reversal'],
+                'created':refund['refund']['created'], 
+                }
+            refunds_collection.insert_one(document)
+            return response.json()
+        
+        else:
+            
+            raise HTTPException(status_code=response.status_code, detail=response.json())
