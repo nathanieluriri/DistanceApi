@@ -316,31 +316,42 @@ class RefundRequest(BaseModel):
     amount: int 
 
 @app.post("/refund")  # Updated the endpoint to just /refund
-async def refund(refund_request: RefundRequest ):
+async def refund(paymentIntentId: str, amount: int = None):
     url = "https://auto-gen-payment-link-stripe.vercel.app/api/v1/refund"
-    headers = {"Content-Type": "application/json"}
-    refundableamount = RefundRequest.amount -500
-    RefundRequest.amount = refundableamount
-    # Prepare the request payload
-    payload = refund_request.model_dump_json()
+
+    if amount !=None:
+        amount = amount-500
+        params = {
+        "paymentIntentId": paymentIntentId,
+        "amount": amount  # This can be None if not provided
+    }
+        print("amount",amount)
+    elif amount ==None:
+         params = {
+        "paymentIntentId": paymentIntentId,
+          # This can be None if not provided
+    }
+         print("amount",amount)
+
+    # Prepare the request body
+   
     uri = os.getenv("MONGO_URI")
 
     client = MongoClient(uri, server_api=ServerApi('1'))
 
     db = client['Deliveries']  
     refunds_collection = db['refunds'] 
-   
     
     async with httpx.AsyncClient() as client:
-        response = await client.post(url, headers=headers, content=payload)
-        
-        if response.status_code == 200:
-            refunds_collection.insert_one(response.json())
-           
-            print(response.json())
-            refund= response.json()
+        response = await client.post(url, json=params)
 
-            document = {
+    if response.status_code == 200:
+        refunds_collection.insert_one(response.json())
+           
+        print(response.json())
+        refund= response.json()
+
+        document = {
                 "_id: ":refund["refund"]['id'],
                 "amountRefunded: ":refund["refund"]['amount'],
                 "paymentId :":refund["refund"]['payment_intent'],
@@ -348,9 +359,10 @@ async def refund(refund_request: RefundRequest ):
                 'transferReversal: ':refund["refund"]['transfer_reversal'],
                 'created':refund['refund']['created'], 
                 }
-            refunds_collection.insert_one(document)
-            return response.json()
-        
-        else:
-            
-            raise HTTPException(status_code=response.status_code, detail=response.json())
+        refunds_collection.insert_one(document)
+        return response.json()  # Return the response from the external API
+    else:
+        raise HTTPException(status_code=response.status_code, detail=response.text)
+   
+   
+    
